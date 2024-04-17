@@ -1,0 +1,138 @@
+# quay.io/prometheus/alertmanager:v0.27.0
+alertmanager:
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/description: "alertmanager.jejuonul.com"
+      alb.ingress.kubernetes.io/ssl-certificate-no: "26670"
+      alb.ingress.kubernetes.io/ssl-min-version: TLSV10
+      alb.ingress.kubernetes.io/enable-http2: "true"
+      alb.ingress.kubernetes.io/load-balancer-size: small
+      alb.ingress.kubernetes.io/idle-timeout: "45"
+      alb.ingress.kubernetes.io/ncloud-load-balancer-retain-public-ip-on-termination: "false"
+      alb.ingress.kubernetes.io/load-balancer-name: "alertmanager-jejuonul-com"
+      alb.ingress.kubernetes.io/algorithm-type: round-robin
+      alb.ingress.kubernetes.io/ssl-redirect: "443"
+    hosts:
+      - alertmanager.jejuonul.com
+    paths:
+      - /*
+
+  service:
+    type: NodePort
+
+  alertmanagerSpec:
+    replicas: 3
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+      requests:
+        cpu: 400m
+        memory: 400Mi
+
+    storage:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: nks-block-storage
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+
+    securityContext:
+      runAsGroup: 2000
+      runAsNonRoot: true
+      runAsUser: 1000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+
+grafana:
+  defaultDashboardsTimezone: Asia/Seoul
+  adminPassword: jejuoperator
+
+  ingress:
+    enabled: true
+    ingressClassName: alb
+    annotations:
+      alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80},{"HTTPS":443}]'
+      alb.ingress.kubernetes.io/description: "grafana.jejuonul.com"
+      alb.ingress.kubernetes.io/ssl-certificate-no: "26670"
+      alb.ingress.kubernetes.io/ssl-min-version: TLSV10
+      alb.ingress.kubernetes.io/enable-http2: "true"
+      alb.ingress.kubernetes.io/load-balancer-size: small
+      alb.ingress.kubernetes.io/idle-timeout: "45"
+      alb.ingress.kubernetes.io/ncloud-load-balancer-retain-public-ip-on-termination: "false"
+      alb.ingress.kubernetes.io/load-balancer-name: "grafana-jejuonul-com"
+      alb.ingress.kubernetes.io/algorithm-type: round-robin
+      alb.ingress.kubernetes.io/ssl-redirect: "443"
+    hosts:
+      - grafana.jejuonul.com
+    paths:
+      - /*
+
+  service:
+    type: NodePort
+
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      uid: loki
+      url: http://loki-stack:3100
+      access: proxy
+      basicAuth: false
+      editable: false
+      jsonData:
+        tlsSkipVerify: true
+
+# quay.io/prometheus/prometheus:v2.51.1
+prometheus:
+  ingress:
+    enabled: false
+
+  prometheusSpec:
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUserHelmValues: false
+    scrapeInterval: "15s"
+    scrapeTimeout: "10s"  
+    evaluationInterval: "15s"
+    retention: 14d
+    retentionSize: "10GiB"
+
+    resources:
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+      requests:
+        cpu: 500m
+        memory: 500Mi
+
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          storageClassName: nks-block-storage
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 20Gi
+
+    securityContext:
+      runAsGroup: 2000
+      runAsNonRoot: true 
+      runAsUser: 1000
+      fsGroup: 2000
+      seccompProfile:
+        type: RuntimeDefault
+
+  service:
+    type: NodePort
+
+  serviecMonitor:
+    additionalScrapeConfigs:
+      - jobName: serviceMonitor/monitoring/kube-prometheus-stack-prometheus-node-exporter/0
+        kubernetes_sd_configs:
+          - role: endpoints
+

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kwatch
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kwatch
+  namespace: kwatch
+data:
+  config.yaml: |
+    alert:
+      slack:
+        webhook: https://hooks.slack.com/services/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
+
